@@ -29,6 +29,9 @@ const WORK = {
   },
 };
 
+const DEBUG = new URLSearchParams(location.search).has("debug");
+if (DEBUG) window.__wheelLog = [];
+
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
 const workModal = document.getElementById("work-modal");
@@ -168,7 +171,7 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
     }
   };
 
-  const atBottom = () => dlg.scrollTop + dlg.clientHeight >= dlg.scrollHeight - 2;
+  const atBottom = () => dlg.scrollTop >= dlg.scrollHeight - dlg.clientHeight - 2;
 
   // Ignore gestures inside a textarea that can still scroll down.
   const inScrollableField = (t) => {
@@ -187,28 +190,33 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
   // natively; if the sheet takes a gesture and hands it back halfway, native
   // scrolling stays frozen until the fingers lift. Owning the scroll avoids that.
   // Small (trackpad) deltas apply 1:1; big (mouse wheel) steps glide.
-  let scrollTarget = 0, scrollRaf = null;
+  // Position is kept as a float: trackpads send fractional deltas, and adding
+  // those to scrollTop directly gets rounded away (slow scrolls wouldn't move).
+  let pos = 0, scrollTarget = 0, scrollRaf = null;
   const maxScroll = () => dlg.scrollHeight - dlg.clientHeight;
+  const clampPos = (v) => Math.max(0, Math.min(maxScroll(), v));
+  const curPos = () => (Math.abs(pos - dlg.scrollTop) < 2 ? pos : (pos = dlg.scrollTop));
+  const setPos = (v) => { pos = clampPos(v); dlg.scrollTop = pos; };
+  const stopGlide = () => { cancelAnimationFrame(scrollRaf); scrollRaf = null; };
   const scrollContent = (dy) => {
     if (Math.abs(dy) < 50) {
-      cancelAnimationFrame(scrollRaf);
-      scrollRaf = null;
-      dlg.scrollTop += dy;
-      scrollTarget = dlg.scrollTop;
+      stopGlide();
+      setPos(curPos() + dy);
       return;
     }
-    if (!scrollRaf) scrollTarget = dlg.scrollTop;
-    scrollTarget = Math.max(0, Math.min(maxScroll(), scrollTarget + dy));
+    if (!scrollRaf) scrollTarget = curPos();
+    scrollTarget = clampPos(scrollTarget + dy);
     const step = () => {
-      const d = scrollTarget - dlg.scrollTop;
-      if (Math.abs(d) < 1) { dlg.scrollTop = scrollTarget; scrollRaf = null; return; }
-      dlg.scrollTop += d * 0.25;
+      const p = curPos();
+      const d = scrollTarget - p;
+      if (Math.abs(d) < 0.5) { setPos(scrollTarget); scrollRaf = null; return; }
+      setPos(p + d * 0.25);
       scrollRaf = requestAnimationFrame(step);
     };
     if (!scrollRaf) scrollRaf = requestAnimationFrame(step);
   };
   const wheelPx = (e) => (e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * dlg.clientHeight : e.deltaY);
-  dlg.addEventListener("close", () => { cancelAnimationFrame(scrollRaf); scrollRaf = null; });
+  dlg.addEventListener("close", stopGlide);
 
   // Mouse wheel / trackpad.
   // Trackpad momentum keeps firing wheel events with *decaying* deltas after the
@@ -224,8 +232,18 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
     pull = 0;
     endFor(mode);
   };
+  const log = DEBUG ? (e, dy, note) => {
+    window.__wheelLog.push([Math.round(performance.now()), dlg.id, +dy.toFixed(2), e.deltaMode,
+      (e.target.className || e.target.tagName || "").toString().slice(0, 14), +dlg.scrollTop.toFixed(1),
+      maxScroll(), armed ? mode : "-", swallow ? "sw" : "", closeReady ? "ready" : "", Math.round(pull),
+      scrollRaf ? "glide" : "", note]);
+    if (window.__wheelLog.length > 600) window.__wheelLog.shift();
+  } : () => {};
   dlg.addEventListener("wheel", (e) => {
     const dy = wheelPx(e);
+    try { handleWheel(e, dy); } finally { log(e, dy, e.defaultPrevented ? "pd" : "native"); }
+  }, { passive: false });
+  function handleWheel(e, dy) {
     if (textareaTakes(e.target, dy)) return; // native textarea scrolling
     e.preventDefault();
     if (dlg.classList.contains("closing")) return;
@@ -270,7 +288,7 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
       return;
     }
     scrollContent(dy);
-  }, { passive: false });
+  }
 
   // Touch: at the bottom, drag up; release to close or spring back.
   // A quick flick closes even if it's short.
