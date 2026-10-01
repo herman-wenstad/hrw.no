@@ -64,12 +64,9 @@ document.querySelectorAll("[data-modal]").forEach((btn) =>
 
 document.querySelectorAll("dialog.modal").forEach((dlg) => {
   dlg.querySelector(".modal-close").addEventListener("click", () => dlg.close());
-  // Close when clicking the backdrop (outside the dialog box).
+  // Close when clicking empty space around the content column.
   dlg.addEventListener("click", (e) => {
-    if (e.target !== dlg) return;
-    const r = dlg.getBoundingClientRect();
-    const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-    if (!inside) dlg.close();
+    if (e.target === dlg) dlg.close();
   });
 });
 

@@ -209,45 +209,59 @@ a { color: inherit; }
 /* ---------- Modal ---------- */
 
 .modal {
-  width: min(920px, calc(100% - 32px));
-  max-height: calc(100svh - 48px);
-  padding: clamp(28px, 5vw, 64px);
+  --col: 920px;
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: clamp(72px, 10vh, 120px) var(--gutter) clamp(48px, 8vh, 96px);
   border: 0;
-  border-radius: 20px;
+  border-radius: 0;
   color: var(--ink);
-  background:
-    radial-gradient(80% 50% at 100% 0%, rgba(20, 120, 160, 0.55), transparent 70%),
-    linear-gradient(170deg, #1d4f93 0%, #23377f 55%, #2a2672 100%);
-  box-shadow: 0 40px 120px rgba(0, 0, 0, 0.5);
+  background: rgba(14, 14, 16, 0.86);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  overflow-y: auto;
   overscroll-behavior: contain;
 }
-.modal--narrow { width: min(560px, calc(100% - 32px)); }
-.modal::backdrop { background: rgba(8, 8, 24, 0.72); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.modal--narrow { --col: 560px; }
+.modal::backdrop { background: transparent; }
 
-.modal[open] { animation: modal-in .35s cubic-bezier(.2, .7, .2, 1); }
-.modal[open]::backdrop { animation: fade-in .35s ease; }
-@keyframes modal-in { from { opacity: 0; transform: translateY(24px) scale(.98); } }
-@keyframes fade-in { from { opacity: 0; } }
+/* Centered content column inside the full-screen sheet */
+.modal > :not(.modal-close) {
+  max-width: var(--col);
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.modal[open] { animation: modal-in .4s cubic-bezier(.2, .7, .2, 1); }
+@keyframes modal-in { from { opacity: 0; } }
+.modal[open] > :not(.modal-close) { animation: content-in .5s cubic-bezier(.2, .7, .2, 1); }
+@keyframes content-in { from { opacity: 0; transform: translateY(20px); } }
 
 .modal-close {
-  position: sticky;
-  top: 0;
-  float: right;
-  margin: -12px -12px 0 0;
-  width: 44px;
-  height: 44px;
+  position: fixed;
+  top: clamp(16px, 3vw, 32px);
+  right: clamp(16px, 3vw, 32px);
+  width: 48px;
+  height: 48px;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.1);
-  font-size: 1.6rem;
+  background: rgba(255, 255, 255, 0.08);
+  font-size: 1.7rem;
   line-height: 1;
   z-index: 1;
-  transition: background .2s;
+  transition: background .2s, transform .2s;
 }
-.modal-close:hover { background: rgba(255, 255, 255, 0.2); }
+.modal-close:hover { background: rgba(255, 255, 255, 0.16); transform: rotate(90deg); }
 
 .modal-title {
-  margin: 0 0 0.3em;
+  /* Shrink to the word so the gradient spans it, aligned to the column's left edge */
+  width: fit-content;
+  margin: 0 0 0.3em max(0px, calc((100% - var(--col)) / 2)) !important;
   font-size: clamp(2.4rem, 6vw, 4rem);
   font-weight: 700;
   letter-spacing: -0.04em;
@@ -316,7 +330,7 @@ a { color: inherit; }
   padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 10px;
-  background: rgba(10, 12, 40, 0.35);
+  background: rgba(255, 255, 255, 0.04);
   color: var(--ink);
   font: inherit;
   font-size: 1rem;
@@ -326,7 +340,7 @@ a { color: inherit; }
 .contact-form input:focus, .contact-form textarea:focus {
   outline: none;
   border-color: var(--beige);
-  background: rgba(10, 12, 40, 0.5);
+  background: rgba(255, 255, 255, 0.07);
 }
 .hp { position: absolute; left: -9999px; }
 
