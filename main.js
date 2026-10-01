@@ -75,10 +75,10 @@ function closeModal(dlg) {
 // ---------- Pull-to-close ----------
 // At the bottom of a modal, scrolling/swiping further down pushes the sheet up
 // and off the top. Two steps, so it's never closed by accident:
-//   1. The first push past the bottom only bounces (capped, springs back) and
-//      reveals a "scroll again to close" hint.
-//   2. A new, separate push then follows the gesture continuously, fading as it
-//      goes; on release it slides away (past the threshold) or springs back.
+//   1. The first push past the bottom only bounces (capped, springs back),
+//      briefly revealing the sheet's bottom edge and the page underneath.
+//   2. A new, separate push then moves the sheet with the gesture; on release
+//      it slides off the top (past the threshold) or springs back.
 // Scrolling back up into the content resets to step 1.
 
 const DISMISS_AT = 110;   // px of sheet travel needed to close on release
@@ -86,14 +86,10 @@ const RESIST = 0.85;      // sheet travel per px of input
 const BOUNCE_MAX = 36;    // px the first (hint) push can move the sheet
 const bounce = (input) => BOUNCE_MAX * (1 - Math.exp(-input / 90));
 
-// Drives --pull (px, negative = up) and --p (0..1 progress) with an eased rAF loop.
+// Drives --pull (px, negative = up) with an eased rAF loop.
 function createSheet(dlg) {
   let target = 0, shown = 0, follow = 0.35, raf = null, onArrive = null;
-  const fadeDistance = () => window.innerHeight * 0.55;
-  const apply = () => {
-    dlg.style.setProperty("--pull", `${(-shown).toFixed(1)}px`);
-    dlg.style.setProperty("--p", Math.min(shown / fadeDistance(), 1).toFixed(3));
-  };
+  const apply = () => dlg.style.setProperty("--pull", `${(-shown).toFixed(1)}px`);
   const tick = () => {
     shown += (target - shown) * follow;
     if (Math.abs(target - shown) < 0.5) shown = target;
@@ -111,8 +107,8 @@ function createSheet(dlg) {
     get target() { return target; },
     drag: (px, f) => moveTo(px, f),
     springBack: () => moveTo(0, 0.2),
-    dismiss: () => moveTo(window.innerHeight, 0.16, () => {
-      if (shown < fadeDistance()) return false;
+    dismiss: () => moveTo(window.innerHeight * 1.15, 0.16, () => {
+      if (shown < window.innerHeight) return false;
       dlg.close();
       return true;
     }),
@@ -122,7 +118,6 @@ function createSheet(dlg) {
       onArrive = null;
       target = shown = 0;
       dlg.style.removeProperty("--pull");
-      dlg.style.removeProperty("--p");
     },
   };
 }
@@ -143,12 +138,9 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
 
   const finish = () => (sheet.target > DISMISS_AT ? sheet.dismiss() : sheet.springBack());
 
-  // Step 1 → 2 state. `closeReady` is set once the hint bounce has happened.
+  // Step 1 → 2 state. `closeReady` is set once the bounce has happened.
   let closeReady = false;
-  const setReady = (on) => {
-    closeReady = on;
-    dlg.classList.toggle("close-ready", on);
-  };
+  const setReady = (on) => { closeReady = on; };
   dlg.addEventListener("close", () => setReady(false));
   dlg.addEventListener("scroll", () => {
     if (closeReady && dlg.scrollHeight - dlg.clientHeight - dlg.scrollTop > 40) setReady(false);
