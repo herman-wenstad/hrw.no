@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HRW — Founder. Advisor. Maker.</title>
+  <meta name="description" content="Herman Wenstad — founder, advisor and maker.">
+  <meta name="theme-color" content="#13122f">
+  <link rel="icon" href="assets/logo.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="hero">
+    <a class="logo" href="#top" aria-label="HRW — home">
+      <img src="assets/logo.svg" alt="" width="100" height="90">
+    </a>
+
+    <nav class="roles" aria-label="Work">
+      <button class="role" data-modal="founder">Founder.</button>
+      <button class="role" data-modal="advisor">Advisor.</button>
+      <button class="role" data-modal="maker">Maker.</button>
+    </nav>
+
+    <a class="scroll-cue" href="#about">
+      <span>About</span>
+      <i aria-hidden="true"></i>
+    </a>
+  </header>
+
+  <main>
+    <section class="about" id="about">
+      <div class="about-grid">
+        <figure class="portrait">
+          <img src="assets/portrait-placeholder.svg" alt="Portrait of Herman Wenstad" width="480" height="380">
+        </figure>
+        <div class="about-text">
+          <h2>About</h2>
+          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+          <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+        </div>
+      </div>
+      <div class="about-actions">
+        <button class="pill" data-modal="contact">Contact</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+      <span>© <span id="year">2026</span> Herman Wenstad</span>
+      <nav aria-label="Elsewhere">
+        <a href="mailto:herman@hrw.no">Email</a>
+        <a href="#" rel="noopener">LinkedIn</a>
+        <button data-modal="contact">Contact</button>
+      </nav>
+    </div>
+  </footer>
+
+  <!-- Work modal (content rendered from main.js) -->
+  <dialog class="modal" id="work-modal" aria-labelledby="work-title">
+    <button class="modal-close" aria-label="Close">&times;</button>
+    <h2 class="modal-title" id="work-title"></h2>
+    <div class="modal-body" id="work-body"></div>
+  </dialog>
+
+  <!-- Contact modal -->
+  <dialog class="modal modal--narrow" id="contact-modal" aria-labelledby="contact-title">
+    <button class="modal-close" aria-label="Close">&times;</button>
+    <h2 class="modal-title" id="contact-title">Get in touch</h2>
+    <p class="modal-lead">Leave a message and I'll get back to you.</p>
+    <form class="contact-form" id="contact-form">
+      <input type="checkbox" name="botcheck" class="hp" tabindex="-1" autocomplete="off">
+      <label>
+        <span>Name</span>
+        <input name="name" type="text" autocomplete="name" required>
+      </label>
+      <label>
+        <span>Email</span>
+        <input name="email" type="email" autocomplete="email" required>
+      </label>
+      <label>
+        <span>Message</span>
+        <textarea name="message" rows="5" required></textarea>
+      </label>
+      <div class="form-foot">
+        <p class="form-status" id="form-status" role="status"></p>
+        <button class="pill" type="submit">Send</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="main.js"></script>
+</body>
+</html>

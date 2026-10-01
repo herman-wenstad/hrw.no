@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 90" fill="none" stroke="#565b70" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Placeholder redraw of the handwritten HRw. mark -->
+  <path d="M18 5 C16 30 13 56 10 84"/>
+  <path d="M3 40 C15 38 27 36 39 35"/>
+  <path d="M35 22 C34 45 33 63 32 84"/>
+  <path d="M35 24 C53 13 66 30 49 42 C45 45 40 46 36 46"/>
+  <path d="M39 47 C46 56 51 65 57 74 L63 56 L70 74 L79 50"/>
+  <circle cx="89" cy="74" r="3" fill="#565b70" stroke="none"/>
+</svg>

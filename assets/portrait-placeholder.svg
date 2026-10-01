@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 380">
+  <!-- Placeholder: replace with a cut-out portrait (transparent PNG/WebP) -->
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2b2a52"/>
+      <stop offset="1" stop-color="#1e1d42"/>
+    </linearGradient>
+  </defs>
+  <circle cx="210" cy="120" r="78" fill="url(#g)"/>
+  <path d="M60 380 C70 270 140 225 210 225 C300 225 380 270 400 380 Z" fill="url(#g)"/>
+</svg>
