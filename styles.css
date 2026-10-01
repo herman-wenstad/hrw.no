@@ -235,7 +235,11 @@ a { color: inherit; }
   max-width: var(--col);
   margin-left: auto;
   margin-right: auto;
+  /* Pull-to-close offset (set from main.js); springs back when released */
+  translate: 0 var(--pull, 0px);
+  transition: translate .35s cubic-bezier(.2, .7, .2, 1);
 }
+.modal.pulling > :not(.modal-close) { transition: none; }
 
 .modal[open] { animation: modal-in .4s cubic-bezier(.2, .7, .2, 1); }
 @keyframes modal-in { from { opacity: 0; } }

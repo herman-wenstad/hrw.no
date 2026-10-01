@@ -67,13 +67,15 @@ function closeModal(dlg) {
   if (!dlg.open || dlg.classList.contains("closing")) return;
   dlg.classList.add("closing");
   setTimeout(() => {
-    dlg.classList.remove("closing");
+    dlg.classList.remove("closing", "pulling");
+    dlg.style.removeProperty("--pull");
     dlg.close();
   }, 250);
 }
 
 // Scrolling/swiping further up while already at the top of a modal closes it.
-const PULL_TO_CLOSE = 90; // px of upward intent needed
+// The content follows the pull so it's clear what's happening.
+const PULL_TO_CLOSE = 120; // px of upward input needed
 
 document.querySelectorAll("dialog.modal").forEach((dlg) => {
   dlg.querySelector(".modal-close").addEventListener("click", () => closeModal(dlg));
@@ -92,32 +94,68 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
     return ta && ta.scrollTop > 0;
   };
 
-  // Mouse wheel / trackpad. Only a gesture that *starts* at the top counts,
-  // so scrolling (or momentum) up to the top doesn't close the modal by itself.
-  let pull = 0, lastWheel = 0, startedAtTop = false;
+  const setPull = (px) => {
+    dlg.classList.add("pulling");
+    dlg.style.setProperty("--pull", `${px}px`);
+  };
+  const release = () => {
+    dlg.classList.remove("pulling");
+    dlg.style.setProperty("--pull", "0px");
+  };
+
+  // Mouse wheel / trackpad.
+  // Trackpad momentum keeps firing wheel events with *decaying* deltas after the
+  // fingers lift, so arriving at the top that way must not close the modal.
+  // A fresh push is recognised by a pause before it, or by deltas that grow.
+  let pull = 0, armed = false, lastWheel = 0, lastAbs = 0, idle;
+  const resetWheel = () => { pull = 0; armed = false; release(); };
   dlg.addEventListener("wheel", (e) => {
     const now = performance.now();
-    if (now - lastWheel > 250) { // new gesture
-      startedAtTop = dlg.scrollTop <= 0;
-      pull = 0;
-    }
+    const abs = Math.abs(e.deltaY);
+    const gap = now - lastWheel;
+    const prevAbs = lastAbs;
     lastWheel = now;
-    if (!startedAtTop || e.deltaY >= 0 || inScrollableField(e.target)) { pull = 0; return; }
-    pull += -e.deltaY;
-    if (pull > PULL_TO_CLOSE) { pull = 0; closeModal(dlg); }
-  }, { passive: true });
+    lastAbs = abs;
 
-  // Touch: swipe down (content moves down = scrolling up) from the top
-  let startY = null;
-  dlg.addEventListener("touchstart", (e) => {
-    startY = dlg.scrollTop <= 0 && !inScrollableField(e.target) ? e.touches[0].clientY : null;
-  }, { passive: true });
-  dlg.addEventListener("touchmove", (e) => {
-    if (startY !== null && e.touches[0].clientY - startY > PULL_TO_CLOSE) {
-      startY = null;
+    if (e.deltaY >= 0 || dlg.scrollTop > 0 || inScrollableField(e.target)) {
+      if (armed || pull) resetWheel();
+      return;
+    }
+    if (!armed && (gap > 150 || abs > prevAbs * 1.15 + 1)) armed = true;
+    if (!armed) return;
+
+    pull += abs;
+    setPull(Math.min(pull * 0.35, 60));
+    clearTimeout(idle);
+    idle = setTimeout(resetWheel, 200);
+    if (pull > PULL_TO_CLOSE) {
+      clearTimeout(idle);
+      pull = 0;
+      armed = false;
       closeModal(dlg);
     }
   }, { passive: true });
+
+  // Touch: drag down from the top; release past the threshold to close.
+  let startY = null, dy = 0;
+  dlg.addEventListener("touchstart", (e) => {
+    dy = 0;
+    startY = dlg.scrollTop <= 0 && !inScrollableField(e.target) ? e.touches[0].clientY : null;
+  }, { passive: true });
+  dlg.addEventListener("touchmove", (e) => {
+    if (startY === null) return;
+    dy = e.touches[0].clientY - startY;
+    if (dy <= 0) { startY = null; release(); return; } // scrolling content instead
+    setPull(Math.min(dy * 0.5, 140));
+  }, { passive: true });
+  const endTouch = () => {
+    if (startY !== null && dy > PULL_TO_CLOSE) closeModal(dlg);
+    else release();
+    startY = null;
+    dy = 0;
+  };
+  dlg.addEventListener("touchend", endTouch);
+  dlg.addEventListener("touchcancel", endTouch);
 });
 
 // Contact form → Web3Forms
