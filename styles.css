@@ -221,7 +221,7 @@ a { color: inherit; }
   border: 0;
   border-radius: 0;
   color: var(--ink);
-  background: rgba(14, 14, 16, 0.86);
+  background: rgba(14, 14, 16, 0.95);
   backdrop-filter: blur(18px) saturate(1.2);
   -webkit-backdrop-filter: blur(18px) saturate(1.2);
   overflow-y: auto;
@@ -241,6 +241,10 @@ a { color: inherit; }
 @keyframes modal-in { from { opacity: 0; } }
 .modal[open] > :not(.modal-close) { animation: content-in .5s cubic-bezier(.2, .7, .2, 1); }
 @keyframes content-in { from { opacity: 0; transform: translateY(20px); } }
+.modal.closing { animation: modal-out .25s ease forwards; }
+.modal.closing > :not(.modal-close) { animation: content-out .25s ease forwards; }
+@keyframes modal-out { to { opacity: 0; } }
+@keyframes content-out { to { opacity: 0; transform: translateY(40px); } }
 
 .modal-close {
   position: fixed;

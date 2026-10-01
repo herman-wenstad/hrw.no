@@ -62,12 +62,62 @@ document.querySelectorAll("[data-modal]").forEach((btn) =>
   btn.addEventListener("click", () => open(btn.dataset.modal))
 );
 
+// Fade out, then close.
+function closeModal(dlg) {
+  if (!dlg.open || dlg.classList.contains("closing")) return;
+  dlg.classList.add("closing");
+  setTimeout(() => {
+    dlg.classList.remove("closing");
+    dlg.close();
+  }, 250);
+}
+
+// Scrolling/swiping further up while already at the top of a modal closes it.
+const PULL_TO_CLOSE = 90; // px of upward intent needed
+
 document.querySelectorAll("dialog.modal").forEach((dlg) => {
-  dlg.querySelector(".modal-close").addEventListener("click", () => dlg.close());
+  dlg.querySelector(".modal-close").addEventListener("click", () => closeModal(dlg));
   // Close when clicking empty space around the content column.
   dlg.addEventListener("click", (e) => {
-    if (e.target === dlg) dlg.close();
+    if (e.target === dlg) closeModal(dlg);
   });
+  dlg.addEventListener("cancel", (e) => {
+    e.preventDefault();
+    closeModal(dlg);
+  });
+
+  // Ignore gestures inside a scrollable textarea that can still scroll up.
+  const inScrollableField = (t) => {
+    const ta = t.closest && t.closest("textarea");
+    return ta && ta.scrollTop > 0;
+  };
+
+  // Mouse wheel / trackpad. Only a gesture that *starts* at the top counts,
+  // so scrolling (or momentum) up to the top doesn't close the modal by itself.
+  let pull = 0, lastWheel = 0, startedAtTop = false;
+  dlg.addEventListener("wheel", (e) => {
+    const now = performance.now();
+    if (now - lastWheel > 250) { // new gesture
+      startedAtTop = dlg.scrollTop <= 0;
+      pull = 0;
+    }
+    lastWheel = now;
+    if (!startedAtTop || e.deltaY >= 0 || inScrollableField(e.target)) { pull = 0; return; }
+    pull += -e.deltaY;
+    if (pull > PULL_TO_CLOSE) { pull = 0; closeModal(dlg); }
+  }, { passive: true });
+
+  // Touch: swipe down (content moves down = scrolling up) from the top
+  let startY = null;
+  dlg.addEventListener("touchstart", (e) => {
+    startY = dlg.scrollTop <= 0 && !inScrollableField(e.target) ? e.touches[0].clientY : null;
+  }, { passive: true });
+  dlg.addEventListener("touchmove", (e) => {
+    if (startY !== null && e.touches[0].clientY - startY > PULL_TO_CLOSE) {
+      startY = null;
+      closeModal(dlg);
+    }
+  }, { passive: true });
 });
 
 // Contact form → Web3Forms
