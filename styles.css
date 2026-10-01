@@ -280,6 +280,25 @@ a { color: inherit; }
   background-clip: text;
   color: transparent;
 }
+/* Shown after the first push past the bottom: the next push closes. Space is
+   always reserved so the scroll height doesn't change when it appears. */
+.modal-hint {
+  margin-top: clamp(40px, 6vh, 64px) !important;
+  text-align: center;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0 !important;
+  transition: opacity .3s;
+}
+.modal.close-ready .modal-hint { opacity: calc(1 - var(--p, 0)) !important; }
+.hint-swipe { display: none; }
+@media (hover: none) {
+  .hint-scroll { display: none; }
+  .hint-swipe { display: inline; }
+}
+
 .modal-lead { margin: 0 0 1.6em; color: var(--muted); }
 
 .work { padding: clamp(36px, 5vw, 56px) 0; }

@@ -17,6 +17,7 @@ Personal site for Herman Wenstad — "Founder. Advisor. Maker."
 ## Modals
 - Full-screen sheet, rgba(14,14,16,.85) + blur. Close: ×, Esc, click empty space, or pull-to-close.
 - Pull-to-close (`createSheet` in main.js): at the bottom, scrolling/swiping further down pushes the sheet up continuously (`--pull` negative, `--p` CSS vars), fading as it goes; on release it slides away past `DISMISS_AT` or springs back.
+- Two-step: the first push past the bottom only bounces (`BOUNCE_MAX`) and shows the "scroll again to close" hint (`.close-ready`); only a new push closes. Scrolling back up resets.
 - Trackpad momentum must never start a pull: fresh input = pause before it or growing deltas; decaying deltas while pulling = fingers lifted = release.
 
 ## Content

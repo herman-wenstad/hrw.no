@@ -74,11 +74,17 @@ function closeModal(dlg) {
 
 // ---------- Pull-to-close ----------
 // At the bottom of a modal, scrolling/swiping further down pushes the sheet up
-// and off the top. It follows the gesture continuously and fades as it goes;
-// on release it either slides away (past the threshold) or springs back.
+// and off the top. Two steps, so it's never closed by accident:
+//   1. The first push past the bottom only bounces (capped, springs back) and
+//      reveals a "scroll again to close" hint.
+//   2. A new, separate push then follows the gesture continuously, fading as it
+//      goes; on release it slides away (past the threshold) or springs back.
+// Scrolling back up into the content resets to step 1.
 
 const DISMISS_AT = 110;   // px of sheet travel needed to close on release
 const RESIST = 0.85;      // sheet travel per px of input
+const BOUNCE_MAX = 36;    // px the first (hint) push can move the sheet
+const bounce = (input) => BOUNCE_MAX * (1 - Math.exp(-input / 90));
 
 // Drives --pull (px, negative = up) and --p (0..1 progress) with an eased rAF loop.
 function createSheet(dlg) {
@@ -137,6 +143,29 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
 
   const finish = () => (sheet.target > DISMISS_AT ? sheet.dismiss() : sheet.springBack());
 
+  // Step 1 → 2 state. `closeReady` is set once the hint bounce has happened.
+  let closeReady = false;
+  const setReady = (on) => {
+    closeReady = on;
+    dlg.classList.toggle("close-ready", on);
+  };
+  dlg.addEventListener("close", () => setReady(false));
+  dlg.addEventListener("scroll", () => {
+    if (closeReady && dlg.scrollHeight - dlg.clientHeight - dlg.scrollTop > 40) setReady(false);
+  }, { passive: true });
+
+  // Moves the sheet for a gesture in the given mode, and ends it.
+  const dragFor = (mode, input, f) =>
+    sheet.drag(mode === "hint" ? bounce(input) : input * RESIST, f);
+  const endFor = (mode) => {
+    if (mode === "hint") {
+      sheet.springBack();
+      setReady(true);
+    } else {
+      finish();
+    }
+  };
+
   const atBottom = () => dlg.scrollTop + dlg.clientHeight >= dlg.scrollHeight - 2;
 
   // Ignore gestures inside a textarea that can still scroll down.
@@ -150,14 +179,14 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
   // fingers lift. So: arriving at the bottom on momentum doesn't start a pull (a
   // fresh push is recognised by a pause before it, or by growing deltas), and
   // once pulling, decaying deltas mean the fingers lifted = release.
-  let pull = 0, armed = false, swallow = false, lastWheel = 0, lastAbs = 0, decays = 0, idle;
+  let pull = 0, armed = false, mode = "hint", swallow = false, lastWheel = 0, lastAbs = 0, decays = 0, idle;
   const releaseWheel = () => {
     clearTimeout(idle);
     if (!armed) return;
     armed = false;
     swallow = true; // ignore the rest of this gesture's momentum
     pull = 0;
-    finish();
+    endFor(mode);
   };
   dlg.addEventListener("wheel", (e) => {
     const now = performance.now();
@@ -173,7 +202,7 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
       decays = abs < prevAbs ? decays + 1 : 0;
       if (decays >= 4) return releaseWheel();
       pull = Math.max(0, pull + e.deltaY); // down adds, up takes back
-      sheet.drag(pull * RESIST);
+      dragFor(mode, pull);
       clearTimeout(idle);
       idle = setTimeout(releaseWheel, 180);
       return;
@@ -182,19 +211,21 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
     if (swallow || e.deltaY <= 0 || !atBottom() || inScrollableField(e.target)) return;
     if (gap > 150 || abs > prevAbs * 1.15 + 1) {
       armed = true;
+      mode = closeReady ? "close" : "hint";
       decays = 0;
       pull = abs;
       e.preventDefault();
-      sheet.drag(pull * RESIST);
+      dragFor(mode, pull);
       idle = setTimeout(releaseWheel, 180);
     }
   }, { passive: false });
 
   // Touch: at the bottom, drag up; release to close or spring back.
   // A quick flick closes even if it's short.
-  let startY = null, lastY = 0, lastT = 0, vy = 0, dragging = false;
+  let startY = null, lastY = 0, lastT = 0, vy = 0, dragging = false, touchMode = "hint";
   dlg.addEventListener("touchstart", (e) => {
     dragging = false;
+    touchMode = closeReady ? "close" : "hint";
     vy = 0;
     startY = atBottom() && !inScrollableField(e.target) ? e.touches[0].clientY : null;
     lastY = startY;
@@ -211,12 +242,12 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
     vy = (lastY - y) / Math.max(1, now - lastT); // upward speed
     lastY = y;
     lastT = now;
-    sheet.drag(dy * RESIST, 1);
+    dragFor(touchMode, dy, 1);
   }, { passive: false });
   const endTouch = () => {
     if (dragging) {
-      if (vy > 0.6 && sheet.target > 30) sheet.dismiss();
-      else finish();
+      if (touchMode === "close" && vy > 0.6 && sheet.target > 30) sheet.dismiss();
+      else endFor(touchMode);
     }
     startY = null;
     dragging = false;
