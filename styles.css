@@ -46,14 +46,77 @@ a { color: inherit; }
   grid-template-columns: auto 1fr;
   align-items: start;
   overflow: hidden;
-  background:
-    linear-gradient(to bottom, transparent 70%, var(--bg) 100%),
-    radial-gradient(45% 40% at 48% 0%, rgba(110, 200, 200, 0.75), transparent 70%),
-    radial-gradient(60% 55% at 0% 95%, rgba(52, 28, 120, 0.9), transparent 70%),
-    radial-gradient(55% 60% at 100% 85%, rgba(14, 18, 52, 0.95), transparent 70%),
-    radial-gradient(70% 70% at 100% 0%, rgba(8, 92, 96, 0.9), transparent 70%),
-    linear-gradient(115deg, #1f3f86 0%, #0c86a3 45%, #0a4f6c 75%, #101a42 100%);
+  isolation: isolate;
+  background: linear-gradient(115deg, #1f3f86 0%, #0c86a3 45%, #0a4f6c 75%, #101a42 100%);
 }
+.hero > :not(.hero-bg) { position: relative; z-index: 1; }
+.hero > .scroll-cue { position: absolute; }
+
+/* Moving gradient: soft light patches drifting slowly on the GPU (transform
+   only). Different durations so the combined motion never visibly loops. */
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.hero-bg::after { /* fade into the page below */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, transparent 70%, var(--bg) 100%);
+}
+.blob {
+  position: absolute;
+  will-change: transform;
+  animation: 31s ease-in-out infinite alternate;
+}
+.blob--deep {  /* dark teal, top right */
+  left: 30%; top: -70%; width: 140%; height: 140%;
+  background: radial-gradient(closest-side, rgba(8, 92, 96, 0.9), transparent 70%);
+  animation-name: drift-deep;
+  animation-duration: 37s;
+}
+.blob--navy {  /* deep navy, bottom right */
+  left: 45%; top: 25%; width: 110%; height: 120%;
+  background: radial-gradient(closest-side, rgba(14, 18, 52, 0.95), transparent 70%);
+  animation-name: drift-navy;
+  animation-duration: 29s;
+}
+.blob--violet {  /* violet, bottom left */
+  left: -60%; top: 40%; width: 120%; height: 110%;
+  background: radial-gradient(closest-side, rgba(52, 28, 120, 0.9), transparent 70%);
+  animation-name: drift-violet;
+  animation-duration: 33s;
+}
+.blob--light {  /* teal glow, top */
+  left: 3%; top: -40%; width: 90%; height: 80%;
+  background: radial-gradient(closest-side, rgba(110, 200, 200, 0.75), transparent 70%);
+  animation-name: drift-light;
+  animation-duration: 23s;
+}
+@keyframes drift-deep {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(-6%, 5%) scale(1.06); }
+  100% { transform: translate(-3%, 9%) scale(0.97); }
+}
+@keyframes drift-navy {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(-8%, -5%) scale(1.08); }
+  100% { transform: translate(-4%, 4%) scale(1.02); }
+}
+@keyframes drift-violet {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(9%, -6%) scale(1.1); }
+  100% { transform: translate(14%, 2%) scale(1.04); }
+}
+@keyframes drift-light {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(14%, 6%) scale(1.12); }
+  100% { transform: translate(-10%, 10%) scale(0.95); }
+}
+/* No need to animate behind an open modal */
+html:has(dialog[open]) .blob { animation-play-state: paused; }
 
 .logo { width: clamp(64px, 7vw, 100px); color: var(--slate); opacity: 0.9; transition: opacity .2s; }
 .logo:hover { opacity: 1; }
