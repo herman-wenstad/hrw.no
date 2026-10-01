@@ -12,7 +12,10 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
+}
 html:has(dialog[open]) { overflow: hidden; }
 
 body {
@@ -35,7 +38,9 @@ a { color: inherit; }
 
 .hero {
   position: relative;
-  min-height: 100svh;
+  height: 100svh;
+  min-height: 520px;
+  scroll-snap-align: start;
   padding: var(--gutter);
   display: grid;
   grid-template-columns: auto 1fr;
@@ -110,12 +115,28 @@ a { color: inherit; }
   100% { transform: scaleY(1); opacity: 0; }
 }
 
+/* ---------- About page (about + footer = second snap page) ---------- */
+
+.page-about {
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-align: start;
+}
+.page-about main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
 /* ---------- About ---------- */
 
 .about {
   max-width: 1250px;
   margin: 0 auto;
-  padding: clamp(80px, 16vh, 220px) var(--gutter) 0;
+  width: 100%;
+  padding: clamp(48px, 8vh, 96px) var(--gutter) 0;
 }
 
 .about-grid {
@@ -142,7 +163,7 @@ a { color: inherit; }
 .about-actions {
   display: flex;
   justify-content: flex-end;
-  padding: 28px clamp(0px, 9vw, 120px) clamp(100px, 18vh, 220px) 0;
+  padding: 28px clamp(0px, 9vw, 120px) clamp(48px, 8vh, 96px) 0;
 }
 
 .pill {
