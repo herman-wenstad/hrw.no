@@ -73,19 +73,19 @@ function closeModal(dlg) {
 }
 
 // ---------- Pull-to-close ----------
-// At the top of a modal, scrolling/swiping further up drags the sheet down.
-// It follows the gesture continuously and fades as it goes; on release it
-// either slides away (past the threshold) or springs back.
+// At the bottom of a modal, scrolling/swiping further down pushes the sheet up
+// and off the top. It follows the gesture continuously and fades as it goes;
+// on release it either slides away (past the threshold) or springs back.
 
 const DISMISS_AT = 110;   // px of sheet travel needed to close on release
 const RESIST = 0.85;      // sheet travel per px of input
 
-// Drives --pull (px) and --p (0..1 progress) with an eased rAF loop.
+// Drives --pull (px, negative = up) and --p (0..1 progress) with an eased rAF loop.
 function createSheet(dlg) {
   let target = 0, shown = 0, follow = 0.35, raf = null, onArrive = null;
   const fadeDistance = () => window.innerHeight * 0.55;
   const apply = () => {
-    dlg.style.setProperty("--pull", `${shown.toFixed(1)}px`);
+    dlg.style.setProperty("--pull", `${(-shown).toFixed(1)}px`);
     dlg.style.setProperty("--p", Math.min(shown / fadeDistance(), 1).toFixed(3));
   };
   const tick = () => {
@@ -137,15 +137,17 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
 
   const finish = () => (sheet.target > DISMISS_AT ? sheet.dismiss() : sheet.springBack());
 
-  // Ignore gestures inside a scrollable textarea that can still scroll up.
+  const atBottom = () => dlg.scrollTop + dlg.clientHeight >= dlg.scrollHeight - 2;
+
+  // Ignore gestures inside a textarea that can still scroll down.
   const inScrollableField = (t) => {
     const ta = t.closest && t.closest("textarea");
-    return ta && ta.scrollTop > 0;
+    return ta && ta.scrollTop + ta.clientHeight < ta.scrollHeight - 1;
   };
 
   // Mouse wheel / trackpad.
   // Trackpad momentum keeps firing wheel events with *decaying* deltas after the
-  // fingers lift. So: arriving at the top on momentum doesn't start a pull (a
+  // fingers lift. So: arriving at the bottom on momentum doesn't start a pull (a
   // fresh push is recognised by a pause before it, or by growing deltas), and
   // once pulling, decaying deltas mean the fingers lifted = release.
   let pull = 0, armed = false, swallow = false, lastWheel = 0, lastAbs = 0, decays = 0, idle;
@@ -170,14 +172,14 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
       e.preventDefault(); // the sheet moves, not the content
       decays = abs < prevAbs ? decays + 1 : 0;
       if (decays >= 4) return releaseWheel();
-      pull = Math.max(0, pull - e.deltaY); // up adds, down takes back
+      pull = Math.max(0, pull + e.deltaY); // down adds, up takes back
       sheet.drag(pull * RESIST);
       clearTimeout(idle);
       idle = setTimeout(releaseWheel, 180);
       return;
     }
 
-    if (swallow || e.deltaY >= 0 || dlg.scrollTop > 0 || inScrollableField(e.target)) return;
+    if (swallow || e.deltaY <= 0 || !atBottom() || inScrollableField(e.target)) return;
     if (gap > 150 || abs > prevAbs * 1.15 + 1) {
       armed = true;
       decays = 0;
@@ -188,25 +190,25 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
     }
   }, { passive: false });
 
-  // Touch: drag down from the top; release to close or spring back.
+  // Touch: at the bottom, drag up; release to close or spring back.
   // A quick flick closes even if it's short.
   let startY = null, lastY = 0, lastT = 0, vy = 0, dragging = false;
   dlg.addEventListener("touchstart", (e) => {
     dragging = false;
     vy = 0;
-    startY = dlg.scrollTop <= 0 && !inScrollableField(e.target) ? e.touches[0].clientY : null;
+    startY = atBottom() && !inScrollableField(e.target) ? e.touches[0].clientY : null;
     lastY = startY;
     lastT = performance.now();
   }, { passive: true });
   dlg.addEventListener("touchmove", (e) => {
     if (startY === null) return;
     const y = e.touches[0].clientY;
-    const dy = y - startY;
+    const dy = startY - y; // upward finger travel
     if (!dragging && dy <= 0) { startY = null; return; } // scrolling content instead
     dragging = true;
     e.preventDefault(); // stop native bounce while dragging the sheet
     const now = performance.now();
-    vy = (y - lastY) / Math.max(1, now - lastT);
+    vy = (lastY - y) / Math.max(1, now - lastT); // upward speed
     lastY = y;
     lastT = now;
     sheet.drag(dy * RESIST, 1);
