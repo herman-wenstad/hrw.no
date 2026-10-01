@@ -301,6 +301,8 @@ html:has(dialog[open]) .blob { animation-play-state: paused; }
 
 .modal {
   --col: 920px;
+  --pad-top: clamp(72px, 10vh, 120px);
+  --x-inset: clamp(16px, 3vw, 32px); /* close button distance from the corner */
   position: fixed;
   inset: 0;
   width: 100%;
@@ -308,7 +310,7 @@ html:has(dialog[open]) .blob { animation-play-state: paused; }
   max-width: none;
   max-height: none;
   margin: 0;
-  padding: clamp(72px, 10vh, 120px) var(--gutter) clamp(48px, 8vh, 96px);
+  padding: var(--pad-top) var(--gutter) clamp(48px, 8vh, 96px);
   border: 0;
   border-radius: 0;
   color: var(--ink);
@@ -340,21 +342,29 @@ html:has(dialog[open]) .blob { animation-play-state: paused; }
 @keyframes modal-out { to { opacity: 0; } }
 @keyframes content-out { to { opacity: 0; transform: translateY(40px); } }
 
+/* Sticky (not fixed): the sheet has a transform, which would make a fixed
+   child scroll away with the content. Negative margins pull it up into the
+   corner and keep it from taking space in the flow. */
 .modal-close {
-  position: fixed;
-  top: clamp(16px, 3vw, 32px);
-  right: clamp(16px, 3vw, 32px);
+  position: sticky;
+  top: calc(var(--x-inset) - var(--pad-top)); /* sticky offsets are measured inside the padding */
+  display: block;
+  margin: calc(var(--x-inset) - var(--pad-top)) calc(var(--x-inset) - var(--gutter)) calc(var(--pad-top) - var(--x-inset) - 48px) auto;
   width: 48px;
   height: 48px;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
+  /* Frosted, so it stays legible over content scrolling underneath */
+  background: rgba(40, 40, 46, 0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
   font-size: 1.7rem;
   line-height: 1;
   z-index: 1;
   transition: background .2s, transform .2s;
 }
-.modal-close:hover { background: rgba(255, 255, 255, 0.16); transform: rotate(90deg); }
+.modal-close:hover { background: rgba(62, 62, 70, 0.85); transform: rotate(90deg); }
 
 .modal-title {
   /* Shrink to the word so the gradient spans it, aligned to the column's left edge */
