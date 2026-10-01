@@ -221,7 +221,7 @@ a { color: inherit; }
   border: 0;
   border-radius: 0;
   color: var(--ink);
-  background: rgba(14, 14, 16, 0.95);
+  background: rgba(14, 14, 16, 0.85);
   backdrop-filter: blur(18px) saturate(1.2);
   -webkit-backdrop-filter: blur(18px) saturate(1.2);
   overflow-y: auto;
