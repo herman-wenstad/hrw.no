@@ -221,9 +221,10 @@ a { color: inherit; }
   border: 0;
   border-radius: 0;
   color: var(--ink);
-  background: rgba(14, 14, 16, 0.85);
-  backdrop-filter: blur(18px) saturate(1.2);
-  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  /* --p (0..1) is pull-to-close progress, set from main.js */
+  background: rgba(14, 14, 16, calc(0.85 * (1 - var(--p, 0))));
+  backdrop-filter: blur(calc(18px * (1 - var(--p, 0)))) saturate(1.2);
+  -webkit-backdrop-filter: blur(calc(18px * (1 - var(--p, 0)))) saturate(1.2);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -235,11 +236,10 @@ a { color: inherit; }
   max-width: var(--col);
   margin-left: auto;
   margin-right: auto;
-  /* Pull-to-close offset (set from main.js); springs back when released */
+  /* Pull-to-close: follows the gesture and fades out */
   translate: 0 var(--pull, 0px);
-  transition: translate .35s cubic-bezier(.2, .7, .2, 1);
+  opacity: calc(1 - var(--p, 0));
 }
-.modal.pulling > :not(.modal-close) { transition: none; }
 
 .modal[open] { animation: modal-in .4s cubic-bezier(.2, .7, .2, 1); }
 @keyframes modal-in { from { opacity: 0; } }
@@ -262,6 +262,7 @@ a { color: inherit; }
   font-size: 1.7rem;
   line-height: 1;
   z-index: 1;
+  opacity: calc(1 - var(--p, 0));
   transition: background .2s, transform .2s;
 }
 .modal-close:hover { background: rgba(255, 255, 255, 0.16); transform: rotate(90deg); }
