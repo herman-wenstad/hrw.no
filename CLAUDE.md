@@ -18,6 +18,8 @@ Personal site for Herman Wenstad — "Founder. Advisor. Maker."
 - Full-screen sheet, rgba(14,14,16,.85) + blur. Close: ×, Esc, click empty space, or pull-to-close.
 - Pull-to-close (`createSheet` in main.js): at the bottom, scrolling/swiping further down moves the whole sheet up with the gesture (`--pull`, negative), so its hard bottom edge reveals the page — no fading; on release it slides away past `DISMISS_AT` or springs back.
 - Two-step: the first push past the bottom only bounces (`BOUNCE_MAX`, no help text); only a new, separate push closes. Scrolling back up resets.
+- The modal scrolls its own content on wheel (always preventDefault; `scrollContent`). Don't hand gestures back to native scrolling mid-gesture — browsers freeze native scrolling for a gesture whose start was cancelled.
+- After a modal closes, `closeDialog` locks page wheel scrolling until a 200ms pause, so leftover momentum doesn't snap the page to About.
 - Trackpad momentum must never start a pull: fresh input = pause before it or growing deltas; decaying deltas while pulling = fingers lifted = release.
 
 ## Content

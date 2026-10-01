@@ -62,13 +62,23 @@ document.querySelectorAll("[data-modal]").forEach((btn) =>
   btn.addEventListener("click", () => open(btn.dataset.modal))
 );
 
+// After a modal closes, the rest of that wheel gesture (incl. trackpad
+// momentum) must not scroll the page behind it (it would snap to About).
+// Locked synchronously at close; unlocks after a short pause in wheel input.
+let pageLocked = false, pageLockLast = 0, pageLockStart = 0;
+function closeDialog(dlg) {
+  pageLocked = true;
+  pageLockLast = pageLockStart = performance.now();
+  dlg.close();
+}
+
 // Fade out, then close (×, Esc, click outside).
 function closeModal(dlg) {
   if (!dlg.open || dlg.classList.contains("closing")) return;
   dlg.classList.add("closing");
   setTimeout(() => {
     dlg.classList.remove("closing");
-    dlg.close();
+    closeDialog(dlg);
   }, 250);
 }
 
@@ -109,7 +119,7 @@ function createSheet(dlg) {
     springBack: () => moveTo(0, 0.2),
     dismiss: () => moveTo(window.innerHeight * 1.15, 0.16, () => {
       if (shown < window.innerHeight) return false;
-      dlg.close();
+      closeDialog(dlg);
       return true;
     }),
     reset: () => {
@@ -165,6 +175,40 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
     const ta = t.closest && t.closest("textarea");
     return ta && ta.scrollTop + ta.clientHeight < ta.scrollHeight - 1;
   };
+  // A textarea that can scroll in this direction keeps native wheel scrolling.
+  const textareaTakes = (t, dy) => {
+    const ta = t.closest && t.closest("textarea");
+    if (!ta) return false;
+    return dy > 0 ? ta.scrollTop + ta.clientHeight < ta.scrollHeight - 1 : ta.scrollTop > 0;
+  };
+
+  // The modal scrolls its own content on wheel input (always preventDefault).
+  // Browsers decide at the start of a trackpad gesture whether it scrolls
+  // natively; if the sheet takes a gesture and hands it back halfway, native
+  // scrolling stays frozen until the fingers lift. Owning the scroll avoids that.
+  // Small (trackpad) deltas apply 1:1; big (mouse wheel) steps glide.
+  let scrollTarget = 0, scrollRaf = null;
+  const maxScroll = () => dlg.scrollHeight - dlg.clientHeight;
+  const scrollContent = (dy) => {
+    if (Math.abs(dy) < 50) {
+      cancelAnimationFrame(scrollRaf);
+      scrollRaf = null;
+      dlg.scrollTop += dy;
+      scrollTarget = dlg.scrollTop;
+      return;
+    }
+    if (!scrollRaf) scrollTarget = dlg.scrollTop;
+    scrollTarget = Math.max(0, Math.min(maxScroll(), scrollTarget + dy));
+    const step = () => {
+      const d = scrollTarget - dlg.scrollTop;
+      if (Math.abs(d) < 1) { dlg.scrollTop = scrollTarget; scrollRaf = null; return; }
+      dlg.scrollTop += d * 0.25;
+      scrollRaf = requestAnimationFrame(step);
+    };
+    if (!scrollRaf) scrollRaf = requestAnimationFrame(step);
+  };
+  const wheelPx = (e) => (e.deltaMode === 1 ? e.deltaY * 40 : e.deltaMode === 2 ? e.deltaY * dlg.clientHeight : e.deltaY);
+  dlg.addEventListener("close", () => { cancelAnimationFrame(scrollRaf); scrollRaf = null; });
 
   // Mouse wheel / trackpad.
   // Trackpad momentum keeps firing wheel events with *decaying* deltas after the
@@ -181,8 +225,13 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
     endFor(mode);
   };
   dlg.addEventListener("wheel", (e) => {
+    const dy = wheelPx(e);
+    if (textareaTakes(e.target, dy)) return; // native textarea scrolling
+    e.preventDefault();
+    if (dlg.classList.contains("closing")) return;
+
     const now = performance.now();
-    const abs = Math.abs(e.deltaY);
+    const abs = Math.abs(dy);
     const gap = now - lastWheel;
     const prevAbs = lastAbs;
     lastWheel = now;
@@ -191,19 +240,18 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
 
     if (armed) {
       // Reversing during the bounce, or back past the start of a close drag:
-      // hand scrolling straight back to the content (otherwise scrolling up
-      // right after a bounce feels stuck).
-      if (e.deltaY < 0 && (mode === "hint" || pull + e.deltaY <= 0)) {
+      // the content scrolls again straight away.
+      if (dy < 0 && (mode === "hint" || pull + dy <= 0)) {
         clearTimeout(idle);
         armed = false;
         pull = 0;
         sheet.springBack();
+        scrollContent(dy);
         return;
       }
-      e.preventDefault(); // the sheet moves, not the content
       decays = abs < prevAbs ? decays + 1 : 0;
       if (decays >= 4) return releaseWheel();
-      pull = Math.max(0, pull + e.deltaY); // down adds, up takes back
+      pull = Math.max(0, pull + dy); // down adds, up takes back
       if (mode === "hint") pull = Math.min(pull, 200); // bounce is capped; so is the input to undo
       dragFor(mode, pull);
       clearTimeout(idle);
@@ -211,16 +259,17 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
       return;
     }
 
-    if (swallow || e.deltaY <= 0 || !atBottom() || inScrollableField(e.target)) return;
-    if (gap > 150 || abs > prevAbs * 1.15 + 1) {
+    const fresh = gap > 150 || abs > prevAbs * 1.15 + 1;
+    if (!swallow && dy > 0 && atBottom() && !scrollRaf && fresh) {
       armed = true;
       mode = closeReady ? "close" : "hint";
       decays = 0;
       pull = abs;
-      e.preventDefault();
       dragFor(mode, pull);
       idle = setTimeout(releaseWheel, 180);
+      return;
     }
+    scrollContent(dy);
   }, { passive: false });
 
   // Touch: at the bottom, drag up; release to close or spring back.
@@ -258,6 +307,14 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
   dlg.addEventListener("touchend", endTouch);
   dlg.addEventListener("touchcancel", endTouch);
 });
+
+window.addEventListener("wheel", (e) => {
+  if (!pageLocked || e.target.closest("dialog[open]")) return;
+  const now = performance.now();
+  if (now - pageLockLast > 200 || now - pageLockStart > 2500) { pageLocked = false; return; }
+  pageLockLast = now;
+  e.preventDefault();
+}, { passive: false });
 
 // Contact form → Web3Forms
 const form = document.getElementById("contact-form");
