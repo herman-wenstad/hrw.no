@@ -20,11 +20,14 @@ Personal site for Herman Wenstad — "Founder. Advisor. Maker."
 - Two-step: the first push past the bottom only bounces (`BOUNCE_MAX`, no help text); only a new, separate push closes. Scrolling back up resets.
 - The modal scrolls its own content on wheel (always preventDefault; `scrollContent`). Don't hand gestures back to native scrolling mid-gesture — browsers freeze native scrolling for a gesture whose start was cancelled.
 - After a modal closes, `closeDialog` locks page wheel scrolling until a 200ms pause, so leftover momentum doesn't snap the page to About.
-- Trackpad momentum must never start a pull: fresh input = pause before it or growing deltas; decaying deltas while pulling = fingers lifted = release.
+- Trackpad momentum must never start a pull: fresh input = pause (>150ms) before it or deltas rising twice in a row (real Mac trackpads start the next swipe <100ms after momentum — a pause alone froze the close); decaying deltas while pulling = fingers lifted = release.
 
 ## Content
 - Role modals read from `WORK` in `main.js`. Each item: `name`, `role`, `shot` (image path or `null` for placeholder), `text` (array of paragraphs).
 - Font: Google Sans Flex (Google Fonts).
+
+## Debugging scroll
+Open `?debug` (e.g. http://localhost:4300/?debug): every modal wheel event + state is recorded in `window.__wheelLog` (time, dialog, deltaY, deltaMode, target, scrollTop, max, mode, swallow, ready, pull, glide, prevented). Reproduce with a real trackpad, then read the log; record `[time, deltaY]` pairs to replay real gestures.
 
 ## Contact form
 - Posts to Web3Forms. Set `WEB3FORMS_KEY` in `main.js`. Until set, the form shows a "not connected" message.

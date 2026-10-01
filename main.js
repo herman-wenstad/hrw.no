@@ -223,7 +223,7 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
   // fingers lift. So: arriving at the bottom on momentum doesn't start a pull (a
   // fresh push is recognised by a pause before it, or by growing deltas), and
   // once pulling, decaying deltas mean the fingers lifted = release.
-  let pull = 0, armed = false, mode = "hint", swallow = false, lastWheel = 0, lastAbs = 0, decays = 0, idle;
+  let pull = 0, armed = false, mode = "hint", swallow = false, lastWheel = 0, lastAbs = 0, decays = 0, rises = 0, idle;
   const releaseWheel = () => {
     clearTimeout(idle);
     if (!armed) return;
@@ -254,7 +254,13 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
     const prevAbs = lastAbs;
     lastWheel = now;
     lastAbs = abs;
-    if (gap > 150) swallow = false; // a new gesture
+    // A new gesture: a pause before it, or deltas that rise twice in a row.
+    // On a Mac trackpad the next swipe often starts <100ms after the previous
+    // swipe's momentum, so a pause alone isn't enough. Momentum only decays;
+    // single spikes happen, hence two rises.
+    rises = abs > prevAbs * 1.15 + 1 ? rises + 1 : 0;
+    const fresh = gap > 150 || rises >= 2;
+    if (fresh) swallow = false;
 
     if (armed) {
       // Reversing during the bounce, or back past the start of a close drag:
@@ -277,7 +283,6 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
       return;
     }
 
-    const fresh = gap > 150 || abs > prevAbs * 1.15 + 1;
     if (!swallow && dy > 0 && atBottom() && !scrollRaf && fresh) {
       armed = true;
       mode = closeReady ? "close" : "hint";
