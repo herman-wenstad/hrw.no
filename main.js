@@ -83,7 +83,7 @@ function closeModal(dlg) {
 
 const DISMISS_AT = 110;   // px of sheet travel needed to close on release
 const RESIST = 0.85;      // sheet travel per px of input
-const BOUNCE_MAX = 36;    // px the first (hint) push can move the sheet
+const BOUNCE_MAX = 64;    // px the first (hint) push can move the sheet
 const bounce = (input) => BOUNCE_MAX * (1 - Math.exp(-input / 90));
 
 // Drives --pull (px, negative = up) with an eased rAF loop.
@@ -190,10 +190,21 @@ document.querySelectorAll("dialog.modal").forEach((dlg) => {
     if (gap > 150) swallow = false; // a new gesture
 
     if (armed) {
+      // Reversing during the bounce, or back past the start of a close drag:
+      // hand scrolling straight back to the content (otherwise scrolling up
+      // right after a bounce feels stuck).
+      if (e.deltaY < 0 && (mode === "hint" || pull + e.deltaY <= 0)) {
+        clearTimeout(idle);
+        armed = false;
+        pull = 0;
+        sheet.springBack();
+        return;
+      }
       e.preventDefault(); // the sheet moves, not the content
       decays = abs < prevAbs ? decays + 1 : 0;
       if (decays >= 4) return releaseWheel();
       pull = Math.max(0, pull + e.deltaY); // down adds, up takes back
+      if (mode === "hint") pull = Math.min(pull, 200); // bounce is capped; so is the input to undo
       dragFor(mode, pull);
       clearTimeout(idle);
       idle = setTimeout(releaseWheel, 180);
