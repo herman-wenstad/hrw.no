@@ -69,43 +69,43 @@ a { color: inherit; }
 .blob {
   position: absolute;
   will-change: transform;
-  animation: 12s ease-in-out infinite alternate;
+  animation: 16s ease-in-out infinite alternate;
 }
 .blob--deep {  /* dark teal, top right */
   left: 30%; top: -70%; width: 140%; height: 140%;
   background: radial-gradient(closest-side, rgba(8, 92, 96, 0.9), transparent 70%);
   animation-name: drift-deep;
-  animation-duration: 15s;
+  animation-duration: 20s;
 }
 .blob--navy {  /* deep navy, bottom right */
   left: 45%; top: 25%; width: 110%; height: 120%;
   background: radial-gradient(closest-side, rgba(14, 18, 52, 0.95), transparent 70%);
   animation-name: drift-navy;
-  animation-duration: 12s;
+  animation-duration: 16s;
 }
 .blob--violet {  /* violet, bottom left */
   left: -60%; top: 40%; width: 120%; height: 110%;
   background: radial-gradient(closest-side, rgba(52, 28, 120, 0.9), transparent 70%);
   animation-name: drift-violet;
-  animation-duration: 13s;
+  animation-duration: 18s;
 }
 .blob--blue {  /* saturated blue, roams the middle-left */
   left: -15%; top: 5%; width: 80%; height: 80%;
   background: radial-gradient(closest-side, rgba(40, 70, 190, 0.7), transparent 70%);
   animation-name: drift-blue;
-  animation-duration: 11s;
+  animation-duration: 15s;
 }
 .blob--light {  /* teal glow, top */
   left: 3%; top: -40%; width: 90%; height: 80%;
   background: radial-gradient(closest-side, rgba(110, 200, 200, 0.75), transparent 70%);
   animation-name: drift-light;
-  animation-duration: 9s;
+  animation-duration: 12s;
 }
 .blob--cyan {  /* small bright cyan highlight */
   left: 30%; top: 25%; width: 60%; height: 60%;
   background: radial-gradient(closest-side, rgba(60, 210, 230, 0.4), rgba(60, 210, 230, 0.12) 50%, transparent 100%);
   animation-name: drift-cyan;
-  animation-duration: 10s;
+  animation-duration: 14s;
 }
 @keyframes drift-deep {
   0%   { transform: translate(0, 0) scale(1) rotate(0deg); }
